@@ -9,7 +9,8 @@ class Process:
         self.nytimes.open_website()
         self.nytimes.search_phrase()
         self.nytimes.apply_filters()
-        self.nytimes.get_news_data()
+        news_list = self.nytimes.get_news_data()
+        self.nytimes.save_to_excel(news_list)
 
 
 

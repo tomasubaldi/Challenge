@@ -1,8 +1,10 @@
 from RPA.Browser.Selenium import Selenium
 from config import Config
+from info import Info
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 import openpyxl
+import time
 
 class NewYorkTimes:
 
@@ -21,99 +23,102 @@ class NewYorkTimes:
         
 
 
-    def apply_filters(self, section=Config().SECTION):
-        if section!='':
-            self.browser.click_button_when_visible("//div[@data-testid='section']//button[@type='button']")
-            self.browser.click_button_when_visible("//input[@value='{section}'|nyt://section/70e865b6-cc70-5181-84c9-8368b3a5c34b']")
-        else:
-            self.browser.click_button_when_visible("//div[@data-testid='section']//button[@type='button']")
-            self.browser.click_button_when_visible("//input[@value='Any']")
-        #Aca va lo del show more, nose si esta bien
-        #while self.browser.is_element_visible("//button[normalize-space()='Show More']"):
-        #   self.browser.click_button_when_visible("//button[normalize-space()='Show More']")
-        #   self.browser.wait_until_page_contains_element("//li[@class='css-1l4w6pd']")    
+    def apply_filters(self, sections=Config().SECTION):
+        self.browser.select_from_list_by_value("css=.css-v7it2b", "newest")
+        self.browser.click_button_when_visible("//div[@data-testid='section']//button[@type='button']")
+        self.browser.wait_until_element_is_visible("//ul[@class='css-64f9ga']")
+        section_elements = self.browser.find_elements("//ul[@class='css-64f9ga']//span[@class='css-16eo56s']")
+        time.sleep(2)
+        for section_element in section_elements:
+            for section in sections:
+                if section in section_element.text:
+                    section_element.click()
+        self.browser.click_button_when_visible("//div[@data-testid='section']//button[@type='button']")
+        while self.browser.is_element_visible("//button[normalize-space()='Show More']"):
+            self.browser.click_button_when_visible("//button[normalize-space()='Show More']")
+            time.sleep(1)
+
        
-        
-    def get_news_data(self):
-        news_list = []
-        
+    def _get_title(self, new: Info, i:int):
         try:
-            news_elements = self.browser.find_elements("//li[@class='css-1l4w6pd']")
-            for news_element in news_elements:
-                try:
-                    title_element = news_element.find_element(By.CLASS_NAME, "css-2fgx4k")
-                    title = title_element.text
-                except NoSuchElementException:
-                    title = ""
-                    
-                try:
-                    description_element = news_element.find_element(By.CLASS_NAME, "css-16nhkrn")
-                    description = description_element.text
-                except NoSuchElementException:
-                    description = ""
-                    
-                try:
-                    date_element = news_element.find_element(By.CLASS_NAME, "css-17ubb9w")
-                    date = date_element.text 
-                except NoSuchElementException:
-                    date = ""
-                    
-                search_phrase_count = 0
-                try:
-                    search_phrase_count += title.lower().count(Config.SEARCH_PHRASE.lower())
-                except AttributeError:
-                    pass
-                try:
-                    search_phrase_count += description.lower().count(Config.SEARCH_PHRASE.lower())
-                except AttributeError:
-                    pass
-                
-                contains_money = False
-                try:
-                    contains_money = "$" in title or "USD" in title
-                except TypeError:
-                    pass
-                try:
-                    contains_money = contains_money or "$" in description or "USD" in description
-                except TypeError:
-                    pass
-                
-                news_list.append({
-                    "title": title,
-                    "description": description,
-                    "date": date,
-                    "search_phrase_count": search_phrase_count,
-                    "contains_money": contains_money
-                })
-        except NoSuchElementException:
-            print("No news were found")
-          
-          
+            title_element = self.browser.find_element(f"(//h4[@class='css-2fgx4k'])[{i}]")
+            new.title = title_element.text 
+        except: 
+            pass
+    
+    
+    def _get_description(self, new: Info, i:int):
+        try:
+            description_element = self.browser.find_element(f"(//p[@class='css-16nhkrn'])[{i}]")
+            new.description = description_element.text 
+        except: 
+            pass
+    
+    
+    def _get_date(self, new: Info, i:int):
+        try:
+            date_element = self.browser.find_element(f"(//span[@class='css-17ubb9w'])[{i}]")
+            new.date = date_element.text 
+        except: 
+            pass
+    
+    def _is_a_new(self, i):
+        try:
+            title_element = self.browser.find_element(f"(//h4[@class='css-2fgx4k'])[{i}]")
+            if title_element.text == "":
+                return False
+            else:
+                return True
+        except Exception as ex: 
+            raise ex
+    
+    
+    def get_news_data(self):
+        self.browser.wait_until_element_is_visible("//div[@class='css-1wa7u5r']")
+        news_list = []
+        time.sleep(2)
+        news_elements = self.browser.find_elements("//main[@id='site-content']//li")
+        for i, _ in enumerate(news_elements,start=1):
+            try:
+                if self._is_a_new(i):
+                    new_info = Info()
+                    self._get_title(new_info, i)
+                    self._get_date(new_info, i)
+                    self._get_description(new_info, i)
+                    #self._count_search_phrases(new_info)
+                    news_list.append(new_info)
+            except:
+                continue
         return news_list
 
+    def save_to_excel(self, news_list):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+  
+        ws["A1"] = "Title"
+        ws["B1"] = "Date"
+        ws["C1"] = "Description"
+        ws["D1"] = "Image Filename"
+        ws["E1"] = "Search Phrase Count"
+        ws["F1"] = "Contains Money"
 
-    
 
-def save_to_excel(news_list):
-    wb = openpyxl.Workbook()
-    ws = wb.active
+        for i, news in enumerate(news_list, start=2):
+            ws[f"A{i}"] = news.title
+            ws[f"B{i}"] = news.date
+            ws[f"C{i}"] = news.description
+            #ws[f"D{i}"] = news.image_filename
+            ws[f"E{i}"] = news.search_phrase_count
+            #ws[f"F{i}"] = news.("contains_money", "")
 
-    
-    ws["A1"] = "Title"
-    ws["B1"] = "Description"
-    ws["C1"] = "Date"
-    ws["D1"] = "Image Filename"
-    ws["E1"] = "Search Phrase Count"
-    ws["F1"] = "Contains Money"
+        
+        wb.save("news.xlsx")
 
-   
-    for i, news in enumerate(news_list, start=2):
-        ws[f"A{i}"] = news.get("title", "")
-        ws[f"B{i}"] = news.get("description", "")
-        ws[f"C{i}"] = news.get("date", "")
-        ws[f"D{i}"] = news.get("image_filename", "")
-        ws[f"E{i}"] = news.get("search_phrase_count", "")
-        ws[f"F{i}"] = news.get("contains_money", "")
 
-    
-    wb.save("news.xlsx")
+
+
+
+
+        
+
+
