@@ -1,9 +1,9 @@
 class Info:
     def __init__(self):
-        self.title = ""
-        self.description = "" 
+        self.title: str = ""
         self.date = ""
-        self.image_file = ""
-        self.has_money = ""
+        self.description = ""
+        self.picture_link = ""
+        self.picture_filename = ""
         self.phrase_count = ""
-
+        self.contains_money = ""

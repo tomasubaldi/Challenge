@@ -1,8 +1,5 @@
 class Config:
-    
     NEW_YORK_TIMES_URL ='https://www.nytimes.com/'
-    SEARCH_PHRASE = 'daniel scioli'
-    SECTION = ['Food', 'World']
-    MONTHS_BACK = 2
-
-    
+    SEARCH_PHRASE = 'lake michigan'
+    SECTION = ['Books', 'Opinion']
+    MONTHS_BACK = 10

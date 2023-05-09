@@ -1,0 +1,20 @@
+tasks:
+  Default:
+    command:
+      - python
+      - main.py
+
+condaConfigFile: conda.yaml
+
+preRunScripts:
+  - pip install -r requirements.txt
+
+artifactsDir: output
+
+PATH:
+  - .
+PYTHONPATH:
+  - .
+
+ignoreFiles:
+  - .gitignore
