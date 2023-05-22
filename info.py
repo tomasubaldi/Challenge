@@ -1,5 +1,6 @@
 class Info:
     """Class Info to create News"""
+
     def __init__(self):
         self.title: str = ""
         self.date = ""

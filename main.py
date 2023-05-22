@@ -1,5 +1,6 @@
 from execution import Execution
 
+
 def main():
     """Main execution"""
     execution = Execution()
@@ -10,6 +11,7 @@ def main():
         print(f"Exception: {error}")
     finally:
         execution.finish()
+
 
 if __name__ == "__main__":
     main()

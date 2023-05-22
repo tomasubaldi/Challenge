@@ -1,4 +1,3 @@
-openpyxl==3.1.2
 python_dateutil==2.8.2
 rpaframework==22.5.3
 selenium==4.9.1
